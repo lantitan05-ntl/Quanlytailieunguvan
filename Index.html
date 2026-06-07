@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Tài Liệu Ngữ Văn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+        body { background-color: #f4f6f9; color: #333; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header {
+            text-align: center; margin-bottom: 30px; padding: 20px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298); color: white;
+            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 28px; margin-bottom: 5px; }
+        header p { font-size: 14px; opacity: 0.9; }
+
+        /* Khối nút bấm lọc lớp */
+        .class-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
+        .class-btn {
+            padding: 10px 20px; background-color: white; color: #2a5298;
+            border: 2px solid #2a5298; border-radius: 20px; cursor: pointer;
+            font-weight: bold; transition: all 0.3s ease; text-decoration: none;
+        }
+        .class-btn:hover, .class-btn.active {
+            background-color: #2a5298; color: white; box-shadow: 0 4px 8px rgba(42, 82, 152, 0.3);
+        }
+
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 15px 20px; border-radius: 8px;
+            margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .search-box input { padding: 10px 15px; width: 300px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        .search-box input:focus { border-color: #2a5298; }
+        
+        .btn-add { background-color: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background-color: #219653; }
+
+        .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 15px 20px; border-bottom: 1px solid #eeeeee; }
+        th { background-color: #f8f9fa; color: #555; font-weight: 500; text-transform: uppercase; font-size: 13px; }
+        tr:hover { background-color: #fcfdff; }
+
+        /* Style tối ưu khi rê chuột vào tên tác phẩm để xem */
+        .ten-tl { cursor: pointer; transition: color 0.2s ease; }
+        .ten-tl:hover { color: #2a5298; text-decoration: underline; }
+
+        /* Trạng thái ẩn hàng khi lọc dữ liệu */
+        tr.hidden { display: none; }
+
+        .badge { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .badge-vanmau { background-color: #e3f2fd; color: #0d47a1; }
+        .badge-soanvan { background-color: #e8f5e9; color: #1b5e20; }
+        .badge-dethi { background-color: #fff3e0; color: #e65100; }
+
+        .action-links a { text-decoration: none; font-size: 14px; font-weight: 500; margin-right: 15px; cursor: pointer; }
+        .btn-edit { color: #f39c12; }
+        .btn-edit:hover { text-decoration: underline; }
+        .btn-delete { color: #e74c3c; }
+        .btn-delete:hover { text-decoration: underline; }
+
+        /* Giao diện Popup Form */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center;
+            align-items: center; z-index: 1000; display: none;
+        }
+        .modal-box {
+            background: white; padding: 25px; border-radius: 8px; width: 450px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-box h2 { margin-bottom: 15px; color: #2a5298; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-save { background: #2a5298; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        
+        /* Nút phụ trong trình xem nội dung chi tiết */
+        .btn-inline-edit { background-color: #f39c12; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: 500; }
+        .btn-inline-edit:hover { background-color: #d68910; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Hệ Thống Kho Học Liệu Môn Ngữ Văn</h1>
+        <p>Quản lý bài soạn, văn mẫu, đề thi từ lớp 6 đến lớp 12</p>
+    </header>
+
+    <div class="class-filter">
+        <button class="class-btn active" onclick="locTheoLop('all')">Tất Cả</button>
+        <button class="class-btn" onclick="locTheoLop('6')">Lớp 6</button>
+        <button class="class-btn" onclick="locTheoLop('7')">Lớp 7</button>
+        <button class="class-btn" onclick="locTheoLop('8')">Lớp 8</button>
+        <button class="class-btn" onclick="locTheoLop('9')">Lớp 9</button>
+        <button class="class-btn" onclick="locTheoLop('10')">Lớp 10</button>
+        <button class="class-btn" onclick="locTheoLop('11')">Lớp 11</button>
+        <button class="class-btn" onclick="locTheoLop('12')">Lớp 12</button>
+    </div>
+
+    <div class="toolbar">
+        <div class="search-box">
+            <input type="text" id="searchInput" onkeyup="timKiemTaiLieu()" placeholder="Tìm kiếm tên tác phẩm, tài liệu...">
+        </div>
+        <button class="btn-add" onclick="moModalThem()">+ Thêm Tài Liệu Mới</button>
+    </div>
+
+    <div class="table-container">
+        <table id="taiLieuTable">
+            <thead>
+                <tr>
+                    <th style="width: 8%">STT</th>
+                    <th style="width: 40%">Tên Tài Liệu / Tác Phẩm</th>
+                    <th style="width: 12%">Khối Lớp</th>
+                    <th style="width: 15%">Phân Loại</th>
+                    <th style="width: 15%">Ngày Cập Nhật</th>
+                    <th style="width: 10%">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-lop="8">
+                    <td>1</td>
+                    <td class="ten-tl" onclick="xemChiTietKhiBamTen(this)"><strong>Phân tích bài thơ Bếp lửa (Bằng Việt)</strong></td>
+                    <td>Lớp 8</td>
+                    <td><span class="badge badge-vanmau">Văn Mẫu</span></td>
+                    <td>04/06/2026</td>
+                    <td class="action-links">
+                        <a class="btn-edit" onclick="suaHang(this)">Sửa</a>
+                        <a class="btn-delete" onclick="xoaHang(this)">Xóa</a>
+                    </td>
+                </tr>
+                <tr data-lop="8">
+                    <td>2</td>
+                    <td class="ten-tl" onclick="xemChiTietKhiBamTen(this)"><strong>Soạn bài: Thương vợ (Trần Tế Xương)</strong></td>
+                    <td>Lớp 8</td>
+                    <td><span class="badge badge-soanvan">Soạn Văn</span></td>
+                    <td>03/06/2026</td>
+                    <td class="action-links">
+                        <a class="btn-edit" onclick="suaHang(this)">Sửa</a>
+                        <a class="btn-delete" onclick="xoaHang(this)">Xóa</a>
+                    </td>
+                </tr>
+                <tr data-lop="9">
+                    <td>3</td>
+                    <td class="ten-tl" onclick="xemChiTietKhiBamTen(this)"><strong>Phân tích nghệ thuật luận điểm trong Lặng lẽ Sa Pa</strong></td>
+                    <td>Lớp 9</td>
+                    <td><span class="badge badge-vanmau">Văn Mẫu</span></td>
+                    <td>01/06/2026</td>
+                    <td class="action-links">
+                        <a class="btn-edit" onclick="suaHang(this)">Sửa</a>
+                        <a class="btn-delete" onclick="xoaHang(this)">Xóa</a>
+                    </td>
+                </tr>
+                <tr data-lop="12">
+                    <td>4</td>
+                    <td class="ten-tl" onclick="xemChiTietKhiBamTen(this)"><strong>Đề thi thử THPT Quốc Gia môn Ngữ Văn 2026</strong></td>
+                    <td>Lớp 12</td>
+                    <td><span class="badge badge-dethi">Đề Thi</span></td>
+                    <td>28/05/2026</td>
+                    <td class="action-links">
+                        <a class="btn-edit" onclick="suaHang(this)">Sửa</a>
+                        <a class="btn-delete" onclick="xoaHang(this)">Xóa</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="viewModal">
+    <div class="modal-box" style="width: 700px; max-height: 80vh; overflow-y: auto;">
+        <h2 id="viewTieuDe" style="color: #1e3c72; border-bottom: 2px solid #2a5298; padding-bottom: 10px;">Tên tác phẩm</h2>
+        <div style="margin: 15px 0; font-size: 14px; color: #666;">
+            <span id="viewLop" class="badge badge-vanmau" style="margin-right: 10px;">Lớp</span>
+            <span id="viewLoai" class="badge badge-soanvan">Phân loại</span>
+        </div>
+        
+        <div id="viewNoiDung" style="line-height: 1.6; text-align: justify; white-space: pre-line; color: #333; background: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 4px solid #2a5298;">
+            Nội dung chi tiết sẽ hiển thị ở đây...
+        </div>
+
+        <div id="editNoiDungContainer" style="display: none;">
+            <textarea id="editNoiDungInput" rows="10" style="width: 100%; line-height: 1.6; padding: 10px; font-size: 14px; resize: vertical; outline: none; border-color: #2a5298;"></textarea>
+        </div>
+
+        <div class="form-actions" style="margin-top: 20px; justify-content: space-between;">
+            <div>
+                <button id="btnInlineEdit" class="btn-inline-edit" onclick="kichHoatSuaNoiDung()">Chỉnh sửa nội dung</button>
+                <button id="btnInlineSave" class="btn-save" onclick="luuNoiDungVuaSua()" style="display: none; background-color: #27ae60;">Xác nhận Lưu</button>
+            </div>
+            <div>
+                <button class="btn-cancel" onclick="dongModalXem()">Đóng lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <h2 id="modalTitle">Thêm Tài Liệu Mới</h2>
+        <div class="form-group">
+            <label>Tên tài liệu / tác phẩm:</label>
+            <input type="text" id="formTen" placeholder="Ví dụ: Soạn bài Lão Hạc...">
+        </div>
+        <div class="form-group">
+            <label>Khối lớp:</label>
+            <select id="formLop">
+                <option value="6">Lớp 6</option>
+                <option value="7">Lớp 7</option>
+                <option value="8">Lớp 8</option>
+                <option value="9">Lớp 9</option>
+                <option value="10">Lớp 10</option>
+                <option value="11">Lớp 11</option>
+                <option value="12">Lớp 12</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Phân loại:</label>
+            <select id="formLoai">
+                <option value="Văn Mẫu">Văn Mẫu</option>
+                <option value="Soạn Văn">Soạn Văn</option>
+                <option value="Đề Thi">Đề Thi</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button class="btn-cancel" onclick="toggleModal(false)">Hủy bỏ</button>
+            <button class="btn-save" onclick="luuDuLieu()">Lưu lại</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Kho dữ liệu lưu trữ nội dung chi tiết của tác phẩm
+    const khoNoiDung = {
+        "Phân tích bài thơ Bếp lửa (Bằng Việt)": "Bài thơ 'Bếp lửa' của Bằng Việt đã gợi lại những kỷ niệm đầy xúc động về tình bà cháu. Hình ảnh bếp lửa xuyên suốt bài thơ không chỉ là hình ảnh thực mộc mạc nơi quê nhà, mà còn là biểu tượng của tình yêu thương bao la, lòng kiên nhẫn và sức sống mãnh liệt của người bà trong những năm tháng kháng chiến gian khổ.",
+        "Soạn bài: Thương vợ (Trần Tế Xương)": "Tác phẩm 'Thương vợ' của Tú Xương là bài thơ chân thực và cảm động nhất trong kho tàng thơ Nôm của ông viết về người vợ. Bài thơ khắc họa sâu sắc hình ảnh bà Tú tần tảo, chịu thương chịu khó nuôi chồng nuôi con, qua đó thể hiện tấm lòng trân trọng, biết ơn và cả nỗi niềm tự trách của nhà thơ.",
+        "Phân tích nghệ thuật luận điểm trong Lặng lẽ Sa Pa": "Truyện ngắn 'Lặng lẽ Sa Pa' của Nguyễn Thành Long khẳng định vẻ đẹp của những con người lao động thầm lặng. Qua nghệ thuật xây dựng tình huống truyện tự nhiên và cách tổ chức hệ thống luận điểm phân tích tâm lý nhân vật ông họa sĩ, cô kỹ sư, tác giả đã làm nổi bật lý tưởng sống cống hiến quên mình vì tổ quốc.",
+        "Đề thi thử THPT Quốc Gia môn Ngữ Văn 2026": "ĐỀ THI GỒM 2 PHẦN CHÍNH:\n\nI. ĐỌC HIỂU (3.0 điểm): Đọc ngữ liệu ngoài sách giáo khoa và trả lời các câu hỏi phát hiện, thông hiểu.\n\nII. LÀM VĂN (7.0 điểm):\nCâu 1 (2.0 điểm): Viết đoạn văn nghị luận xã hội về ý nghĩa của ý chí vượt khó.\nCâu 2 (5.0 điểm): Nghị luận văn học phân tích giá trị nhân đạo trong một tác phẩm tự sự."
+    };
+
+    let dangSuaRow = null;
+    let dangXemTieuDeKey = ""; // Biến phụ dùng để ghi nhớ tên bài viết đang mở xem công khai
+
+    // --- CÁC HÀM XỬ LÝ POPUP XEM & SỬA NỘI DUNG CHI TIẾT ---
+    function xemChiTietKhiBamTen(cell) {
+        let row = cell.parentElement;
+        dangXemTieuDeKey = cell.innerText.trim(); // Lưu lại key tiêu đề hiện tại
+        let lop = row.cells[2].innerText;
+        let loai = row.querySelector('.badge').innerText;
+
+        document.getElementById('viewTieuDe').innerText = dangXemTieuDeKey;
+        document.getElementById('viewLop').innerText = lop;
+        document.getElementById('viewLoai').innerText = loai;
+
+        // Trả trạng thái giao diện popup về chế độ Xem (Ẩn khung textarea đi)
+        document.getElementById('viewNoiDung').style.display = 'block';
+        document.getElementById('editNoiDungContainer').style.display = 'none';
+        document.getElementById('btnInlineEdit').style.display = 'inline-block';
+        document.getElementById('btnInlineSave').style.display = 'none';
+
+        let noiDung = khoNoiDung[dangXemTieuDeKey] || "Nội dung chi tiết của tài liệu này hiện đang được cập nhật...";
+        document.getElementById('viewNoiDung').innerText = noiDung;
+
+        document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    // Bật khung Textarea cho phép chỉnh sửa văn bản
+    function kichHoatSuaNoiDung() {
+        let noiDungHienTai = khoNoiDung[dangXemTieuDeKey] || "";
+        document.getElementById('editNoiDungInput').value = noiDungHienTai;
+
+        // Hoán đổi hiển thị cấu trúc HTML
+        document.getElementById('viewNoiDung').style.display = 'none';
+        document.getElementById('editNoiDungContainer').style.display = 'block';
+        document.getElementById('btnInlineEdit').style.display = 'none';
+        document.getElementById('btnInlineSave').style.display = 'inline-block';
+    }
+
+    // Lưu nội dung bài viết vừa chỉnh sửa vào kho dữ liệu
+    function luuNoiDungVuaSua() {
+        let noiDungMoi = document.getElementById('editNoiDungInput').value;
+        
+        // Cập nhật giá trị mới vào kho lưu trữ JSON object
+        khoNoiDung[dangXemTieuDeKey] = noiDungMoi;
+        document.getElementById('viewNoiDung').innerText = noiDungMoi;
+
+        // Quay lại trạng thái chỉ đọc
+        document.getElementById('viewNoiDung').style.display = 'block';
+        document.getElementById('editNoiDungContainer').style.display = 'none';
+        document.getElementById('btnInlineEdit').style.display = 'inline-block';
+        document.getElementById('btnInlineSave').style.display = 'none';
+        
+        alert("Đã cập nhật nội dung văn bản chi tiết thành công!");
+    }
+
+    function dongModalXem() {
+        document.getElementById('viewModal').style.display = 'none';
+    }
+
+
+    // --- CÁC HÀM XỬ LÝ POPUP THÊM/SỬA BẢNG ---
+    function toggleModal(show) {
+        document.getElementById('addModal').style.display = show ? 'flex' : 'none';
+    }
+
+    function moModalThem() {
+        dangSuaRow = null;
+        document.getElementById('modalTitle').innerText = "Thêm Tài Liệu Mới";
+        document.getElementById('formTen').value = "";
+        document.getElementById('formLop').value = "6";
+        document.getElementById('formLoai').value = "Văn Mẫu";
+        toggleModal(true);
+    }
+
+    function suaHang(button) {
+        dangSuaRow = button.parentElement.parentElement;
+        
+        let tenHienTai = dangSuaRow.querySelector('.ten-tl').innerText.trim();
+        let lopHienTai = dangSuaRow.getAttribute('data-lop');
+        let loaiHienTai = dangSuaRow.querySelector('.badge').innerText.trim();
+
+        document.getElementById('modalTitle').innerText = "Chỉnh Sửa Thuộc Tính";
+        document.getElementById('formTen').value = tenHienTai;
+        document.getElementById('formLop').value = lopHienTai;
+        document.getElementById('formLoai').value = loaiHienTai;
+
+        toggleModal(true);
+    }
+
+    function luuDuLieu() {
+        let ten = document.getElementById('formTen').value;
+        let lop = document.getElementById('formLop').value;
+        let loai = document.getElementById('formLoai').value;
+
+        if (ten.trim() === "") {
+            alert("Vui lòng nhập tên tài liệu!");
+            return;
+        }
+
+        let badgeClass = 'badge-vanmau';
+        if(loai === 'Soạn Văn') badgeClass = 'badge-soanvan';
+        if(loai === 'Đề Thi') badgeClass = 'badge-dethi';
+
+        let dateObj = new Date();
+        let today = String(dateObj.getDate()).padStart(2, '0') + '/' + String(dateObj.getMonth() + 1).padStart(2, '0') + '/' + dateObj.getFullYear();
+
+        if (dangSuaRow === null) {
+            let tableBody = document.querySelector('#taiLieuTable tbody');
+            let newRow = document.createElement('tr');
+            newRow.setAttribute('data-lop', lop);
+            
+            newRow.innerHTML = `
+                <td></td>
+                <td class="ten-tl" onclick="xemChiTietKhiBamTen(this)"><strong>${ten}</strong></td>
+                <td>Lớp ${lop}</td>
+                <td><span class="badge ${badgeClass}">${loai}</span></td>
+                <td>${today}</td>
+                <td class="action-links">
+                    <a class="btn-edit" onclick="suaHang(this)">Sửa</a>
+                    <a class="btn-delete" onclick="xoaHang(this)">Xóa</a>
+                </td>
+            `;
+            tableBody.appendChild(newRow);
+        } else {
+            let cuTieuDe = dangSuaRow.querySelector('.ten-tl').innerText.trim();
+            // Nếu đổi tên tiêu đề ở ngoài bảng, di chuyển dữ liệu cũ sang tên key mới trong kho lưu trữ
+            if(cuTieuDe !== ten) {
+                khoNoiDung[ten] = khoNoiDung[cuTieuDe] || "";
+                delete khoNoiDung[cuTieuDe];
+            }
+
+            dangSuaRow.setAttribute('data-lop', lop);
+            dangSuaRow.cells[1].innerHTML = `<strong>${ten}</strong>`;
+            dangSuaRow.cells[2].innerText = `Lớp ${lop}`;
+            dangSuaRow.cells[3].innerHTML = `<span class="badge ${badgeClass}">${loai}</span>`;
+            dangSuaRow.cells[4].innerText = today;
+        }
+
+        capNhatSTT();
+        toggleModal(false); 
+    }
+
+
+    // --- CHỨC NĂNG LỌC & TÌM KIẾM ---
+    function locTheoLop(lop) {
+        let buttons = document.querySelectorAll('.class-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        if(window.event && window.event.currentTarget) {
+            window.event.currentTarget.classList.add('active');
+        }
+
+        let rows = document.querySelectorAll('#taiLieuTable tbody tr');
+        rows.forEach(row => {
+            let rowLop = row.getAttribute('data-lop');
+            if (lop === 'all' || rowLop === lop) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    }
+
+    function timKiemTaiLieu() {
+        let input = document.getElementById('searchInput').value.toUpperCase();
+        let rows = document.querySelectorAll('#taiLieuTable tbody tr');
+        
+        rows.forEach(row => {
+            let text = row.querySelector('.ten-tl').textContent || row.querySelector('.ten-tl').innerText;
+            if (text.toUpperCase().indexOf(input) > -1) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    }
+
+    function xoaHang(button) {
+        if (confirm("Bạn có chắc chắn muốn xóa tài liệu này?")) {
+            let row = button.parentElement.parentElement;
+            row.remove();
+            capNhatSTT();
+        }
+    }
+
+    function capNhatSTT() {
+        let rows = document.querySelectorAll('#taiLieuTable tbody tr');
+        rows.forEach((row, index) => {
+            row.cells[0].innerText = index + 1;
+        });
+    }
+</script>
+
+</body>
+</html>
